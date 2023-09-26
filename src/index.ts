@@ -1,3 +1,9 @@
+import readline from "node:readline";
+const read = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
+
 const TokenTypes = {
     Assign: "=",
     NotEqual: "!=",
@@ -226,30 +232,56 @@ class Tokenizer {
     }
 }
 
-const text_1 = `
-    let five = 5;
-    let ten = 10;
-    let add = fn(x, y) {
-        x + y;
-    };
-    let result = add(five, ten);
-    !-/*5;
-    5 < 10 > 5;
-    if (5 < 10) {
-        return true;
-    } else {
-        return false;
+read.question(
+    "Open REPL or run basic predefined test case? (repl / test) ",
+    (answer) => {
+        if (answer === "repl") {
+            process.stdout.write(">> ");
+            read.on("line", (input) => {
+                const tokenizer = new Tokenizer(input);
+
+                while (true) {
+                    const token = tokenizer.nextToken();
+
+                    console.log(token);
+
+                    if (token?.type === "EOF") break;
+                }
+                process.stdout.write(">> ");
+            });
+        } else if (answer === "test") {
+            const testInput = `
+                let five = 5;
+                let ten = 10;
+                let add = fn(x, y) {
+                    x + y;
+                };
+                let result = add(five, ten);
+                !-/*5;
+                5 < 10 > 5;
+                if (5 < 10) {
+                    return true;
+                } else {
+                    return false;
+                }
+
+                10 == 10;
+                10 != 9;
+                let mul = 7 * 10 + 8 / 1000;`;
+
+            const tokenizer = new Tokenizer(testInput);
+
+            while (true) {
+                const token = tokenizer.nextToken();
+
+                console.log(token);
+
+                if (token?.type === "EOF") break;
+            }
+
+            read.close();
+        } else {
+            read.close();
+        }
     }
-
-    10 == 10;
-    10 != 9;
-    let mul = 7 * 10 + 8 / 1000;`;
-const tokenizer = new Tokenizer(text_1);
-
-while (true) {
-    const token = tokenizer.nextToken();
-
-    console.log(token);
-
-    if (token?.type === "EOF") break;
-}
+);
