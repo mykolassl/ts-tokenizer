@@ -1,11 +1,4 @@
 const TokenTypes = {
-    Eof: "EOF",
-    If: "if",
-    Return: "return",
-    True: "true",
-    False: "false",
-    Else: "else",
-    Int: "INT",
     Assign: "=",
     NotEqual: "!=",
     Equal: "==",
@@ -16,16 +9,33 @@ const TokenTypes = {
     RParen: ")",
     LSquirly: "{",
     RSquirly: "}",
-    Function: "FUNCTION",
-    Let: "LET",
     Bang: "!",
     Minus: "-",
     Slash: "/",
     Asterisk: "*",
     LT: "<",
     GT: ">",
+    Eof: "EOF",
+    Return: "RETURN",
+    False: "FALSE",
+    True: "TRUE",
+    If: "IF",
+    Else: "ELSE",
+    Let: "LET",
+    Function: "FUNCTION",
     Identifier: "IDENT",
+    Int: "INT",
     Illegal: "ILLEGAL",
+} as const;
+
+const Keywords = {
+    fn: TokenTypes.Function,
+    let: TokenTypes.Let,
+    else: TokenTypes.Else,
+    false: TokenTypes.False,
+    true: TokenTypes.True,
+    return: TokenTypes.Return,
+    if: TokenTypes.If,
 } as const;
 
 type TokenType = (typeof TokenTypes)[keyof typeof TokenTypes];
@@ -39,23 +49,31 @@ function createToken(value: string, type: TokenType): Token {
     return { value, type };
 }
 
+function isDigit(ch: string): boolean {
+    return ch >= "0" && ch <= "9";
+}
+
+function isChar(ch: string): boolean {
+    return (
+        (ch >= "a" && ch <= "z") ||
+        (ch >= "A" && ch <= "Z") ||
+        ch === "_" ||
+        ch === "$"
+    );
+}
+
 class Tokenizer {
     private position = 0;
     private peekPosition = 0;
-    private ch: string | undefined;
+    private ch!: string;
     private input: string;
 
     constructor(_input: string) {
         this.input = _input;
         this.readChar();
-        console.log({
-            pos: this.position,
-            ppos: this.peekPosition,
-            ch: this.ch,
-        });
     }
 
-    nextToken(): Token | undefined {
+    nextToken(): Token {
         this.skipWhitespace();
         let token: Token | undefined;
 
@@ -119,6 +137,33 @@ class Tokenizer {
                 break;
         }
 
+        if (isChar(this.ch)) {
+            const identifier = this.readIdentifier();
+            const keywordType = Keywords[identifier as keyof typeof Keywords];
+
+            if (keywordType) {
+                token = createToken(identifier, keywordType);
+            } else {
+                token = createToken(identifier, TokenTypes.Identifier);
+            }
+
+            // Return early, because readIdentifier() moves cursor one position after digit ends
+
+            return token;
+        }
+
+        if (isDigit(this.ch)) {
+            const digit = this.readInteger();
+
+            // Return early, because readInteger() moves cursor one position after digit ends
+
+            return createToken(digit, TokenTypes.Int);
+        }
+
+        if (!token) {
+            return createToken(this.ch, TokenTypes.Illegal);
+        }
+
         this.readChar();
 
         return token;
@@ -135,7 +180,7 @@ class Tokenizer {
         }
     }
 
-    private readChar() {
+    private readChar(): void {
         if (this.peekPosition >= this.input.length) {
             this.ch = "\0";
         } else {
@@ -153,11 +198,36 @@ class Tokenizer {
             return this.input[this.peekPosition];
         }
     }
+
+    private readIdentifier(): string {
+        const pos = this.position;
+
+        // a     abcdefg
+        // ^^    ^-->---^
+
+        while (isChar(this.ch)) {
+            this.readChar();
+        }
+
+        return this.input.slice(pos, this.position);
+    }
+
+    private readInteger(): string {
+        const pos = this.position;
+
+        // 8     8888888
+        // ^^    ^-->---^
+
+        while (isDigit(this.ch)) {
+            this.readChar();
+        }
+
+        return this.input.slice(pos, this.position);
+    }
 }
 
 const text_1 = "let x = 5;";
-const text_2 = "; != == + ; *";
-const tokenizer = new Tokenizer(text_2);
+const tokenizer = new Tokenizer(text_1);
 
 while (true) {
     const token = tokenizer.nextToken();
