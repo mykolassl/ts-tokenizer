@@ -119,6 +119,8 @@ class Tokenizer {
                 break;
         }
 
+        this.readChar();
+
         return token;
     }
 
@@ -153,13 +155,14 @@ class Tokenizer {
     }
 }
 
-const text = "let x = 5;";
-const tokenizer = new Tokenizer(text);
+const text_1 = "let x = 5;";
+const text_2 = "; != == + ; *";
+const tokenizer = new Tokenizer(text_2);
 
 while (true) {
     const token = tokenizer.nextToken();
 
-    if (!token) break;
-
     console.log(token);
+
+    if (token?.type === "EOF") break;
 }
